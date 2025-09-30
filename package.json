@@ -29,7 +29,7 @@
     "@nestjs/platform-express": "^10.3.3",
     "@nestjs/typeorm": "^10.0.1",
     "@slack/web-api": "^7.0.1",
-    "axios": "^1.6.7",
+    "axios": "^1.12.2",
     "hbs": "^4.2.0",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
