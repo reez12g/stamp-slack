@@ -10,7 +10,7 @@ A NestJS application that integrates with Slack to make emojis bigger in Slack c
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v20 or higher)
 - PostgreSQL
 - Slack App with appropriate permissions
 
