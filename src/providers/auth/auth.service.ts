@@ -13,9 +13,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../entities/auth/user.entity';
 import { lastValueFrom } from 'rxjs';
 import { OauthAccessDto } from '../../dto/auth/auth.access.dto';
-
-const DEFAULT_AUTH_SUCCESS_REDIRECT_URL =
-  'https://miro.medium.com/max/5000/1*QqoS6WsjG6WSr9-BFFQhbA.jpeg';
+import { getAuthSuccessRedirectUrl } from '../../config/slack-app.config';
 
 @Injectable()
 export class AuthService {
@@ -86,7 +84,7 @@ export class AuthService {
     });
     return {
       success: true,
-      redirectUrl: process.env.AUTH_SUCCESS_REDIRECT_URL ?? DEFAULT_AUTH_SUCCESS_REDIRECT_URL,
+      redirectUrl: getAuthSuccessRedirectUrl(),
     };
   }
 

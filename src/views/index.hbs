@@ -1,12 +1,343 @@
 <!DOCTYPE html>
+<html lang='en'>
 <head>
     <meta charset="utf-8" />
-    <title>Stamp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #172033;
+            --muted: #5f6b7d;
+            --line: rgba(23, 32, 51, 0.12);
+            --panel: rgba(255, 255, 255, 0.88);
+            --accent: #f25f4c;
+            --accent-strong: #c53f2d;
+            --accent-soft: rgba(242, 95, 76, 0.14);
+            --ok: #1c7c54;
+            --warn: #a06100;
+            --bg-top: #f6efe7;
+            --bg-bottom: #e8eef7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Avenir Next", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(242, 95, 76, 0.16), transparent 28rem),
+                linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+        }
+
+        main {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 48px 20px 64px;
+        }
+
+        .hero {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: 0 18px 60px rgba(23, 32, 51, 0.08);
+        }
+
+        .eyebrow {
+            margin: 0 0 12px;
+            color: var(--accent-strong);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 4vw, 4.2rem);
+            line-height: 0.95;
+            letter-spacing: -0.04em;
+        }
+
+        .lede {
+            max-width: 42rem;
+            margin: 16px 0 0;
+            color: var(--muted);
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .banner {
+            margin-top: 20px;
+            border-radius: 18px;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+        }
+
+        .banner.success {
+            background: rgba(28, 124, 84, 0.12);
+            color: var(--ok);
+        }
+
+        .banner.warning {
+            background: rgba(160, 97, 0, 0.12);
+            color: var(--warn);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 20px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: white;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 140ms ease, background 140ms ease;
+        }
+
+        .button:hover {
+            background: var(--accent-strong);
+            transform: translateY(-1px);
+        }
+
+        .subtle-link {
+            color: var(--ink);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .grid {
+            display: grid;
+            gap: 18px;
+            margin-top: 22px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 16px 42px rgba(23, 32, 51, 0.06);
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+        }
+
+        .card p,
+        .card li {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .urls {
+            display: grid;
+            gap: 12px;
+        }
+
+        .url-block {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--line);
+        }
+
+        .url-block strong,
+        .status-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--ink);
+        }
+
+        code {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: rgba(23, 32, 51, 0.08);
+            color: var(--ink);
+            font-family: "SFMono-Regular", "Menlo", monospace;
+            word-break: break-word;
+        }
+
+        ul,
+        ol {
+            padding-left: 1.2rem;
+            margin: 0;
+        }
+
+        .status-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .status-list li {
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .status-list li.ready {
+            border-color: rgba(28, 124, 84, 0.22);
+        }
+
+        .status-list li.pending {
+            border-color: rgba(160, 97, 0, 0.22);
+            background: rgba(255, 246, 230, 0.8);
+        }
+
+        .status-value {
+            margin-top: 8px;
+        }
+
+        .scope-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+            padding: 0;
+        }
+
+        .scope-list li {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        @media (min-width: 860px) {
+            .grid {
+                grid-template-columns: 1.1fr 0.9fr;
+            }
+
+            .card.full {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
 </head>
 <body>
-<div>Welcome to Stamp</div>
-<div>Make emoji bigger by using /stamp :emoji: </div>
-<a href={{ href }}>
-    <img alt='Add to Slack' height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" />
-</a>
+<main>
+    <section class="hero">
+        <p class="eyebrow">Slack Slash Command Setup</p>
+        <h1>{{ title }}</h1>
+        <p class="lede">
+            Authenticate one Slack user, then use <code>/stamp :emoji:</code> to post a larger version
+            of that emoji into the current channel.
+        </p>
+
+        {{#if connected}}
+            <div class="banner success">
+                Slack OAuth completed successfully. Return to Slack and try <code>/stamp :thumbsup:</code>.
+            </div>
+        {{/if}}
+
+        {{#if needsPublicBaseUrl}}
+            <div class="banner warning">
+                <strong>Slack cannot call localhost directly.</strong>
+                Set <code>APP_BASE_URL</code> to your public HTTPS tunnel or deployed URL before installing the app.
+            </div>
+        {{/if}}
+
+        <div class="actions">
+            {{#if addToSlackUrl}}
+                <a class="button" href="{{ addToSlackUrl }}">Add to Slack</a>
+            {{else}}
+                <span class="banner warning">Set <code>SLACK_CLIENT_ID</code> to render the Add to Slack link.</span>
+            {{/if}}
+            <a class="subtle-link" href="https://api.slack.com/apps">Open Slack App Settings</a>
+        </div>
+    </section>
+
+    <section class="grid">
+        <article class="card">
+            <h2>Slack Configuration</h2>
+            <div class="stack">
+                <div class="urls">
+                    <div class="url-block">
+                        <strong>OAuth redirect URL</strong>
+                        <code>{{ oauthRedirectUrl }}</code>
+                    </div>
+                    <div class="url-block">
+                        <strong>Slash command request URL</strong>
+                        <code>{{ slashCommandUrl }}</code>
+                    </div>
+                    <div class="url-block">
+                        <strong>Post-auth redirect</strong>
+                        <code>{{ authSuccessRedirectUrl }}</code>
+                    </div>
+                </div>
+
+                <div>
+                    <strong class="status-label">Bot scopes</strong>
+                    <ul class="scope-list">
+                        {{#each botScopes}}
+                            <li>{{ this }}</li>
+                        {{/each}}
+                    </ul>
+                </div>
+
+                <div>
+                    <strong class="status-label">User scopes</strong>
+                    <ul class="scope-list">
+                        {{#each userScopes}}
+                            <li>{{ this }}</li>
+                        {{/each}}
+                    </ul>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <h2>Environment Status</h2>
+            <ul class="status-list">
+                {{#each setupChecklist}}
+                    <li class="{{#if this.ready}}ready{{else}}pending{{/if}}">
+                        <strong class="status-label">{{ this.label }}</strong>
+                        <div class="status-value"><code>{{ this.value }}</code></div>
+                    </li>
+                {{/each}}
+            </ul>
+        </article>
+
+        <article class="card full">
+            <h2>Quick Start</h2>
+            <ol>
+                <li>Run <code>cp .env.example .env</code> and fill in your Slack credentials.</li>
+                <li>Start PostgreSQL with <code>docker compose up -d postgres</code> or point the app at an existing database.</li>
+                <li>Set <code>APP_BASE_URL</code> to your public HTTPS URL if you are testing from localhost.</li>
+                <li>Create a Slash Command in Slack and set its request URL to <code>{{ slashCommandUrl }}</code>.</li>
+                <li>Install the app, complete OAuth, then run <code>/stamp :emoji:</code> inside Slack.</li>
+            </ol>
+        </article>
+    </section>
+</main>
 </body>
+</html>

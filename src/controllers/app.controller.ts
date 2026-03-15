@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query, Render } from '@nestjs/common';
 import { AppService } from '../providers/app.service';
 
 @Controller()
@@ -6,7 +6,8 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Render('index')
+  getLandingPage(@Query('connected') connected?: string) {
+    return this.appService.getLandingPage(connected === '1');
   }
 }

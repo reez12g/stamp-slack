@@ -35,6 +35,17 @@ describe('AuthController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/auth')
       .query({ code: 'test-code', state: 'test-state' })
+      .expect(HttpStatus.FOUND)
+      .expect('Location', 'https://example.com');
+  });
+
+  it('/auth (GET) - json success', async () => {
+    const mockResponse = { success: true, redirectUrl: 'https://example.com' };
+    jest.spyOn(authService, 'exchangeTempAuthToken').mockResolvedValue(mockResponse);
+
+    return request(app.getHttpServer())
+      .get('/auth')
+      .query({ code: 'test-code', state: 'test-state', format: 'json' })
       .expect(HttpStatus.OK)
       .expect(mockResponse);
   });

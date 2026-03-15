@@ -47,6 +47,9 @@ describe('AuthService', () => {
     // Mock environment variables
     process.env.SLACK_CLIENT_ID = 'test-client-id';
     process.env.SLACK_CLIENT_SECRET = 'test-client-secret';
+    delete process.env.APP_BASE_URL;
+    delete process.env.AUTH_SUCCESS_REDIRECT_URL;
+    process.env.PORT = '3000';
   });
 
   afterEach(() => {
@@ -97,7 +100,7 @@ describe('AuthService', () => {
       });
       expect(result).toEqual({
         success: true,
-        redirectUrl: 'https://miro.medium.com/max/5000/1*QqoS6WsjG6WSr9-BFFQhbA.jpeg',
+        redirectUrl: 'http://localhost:3000/?connected=1',
       });
     });
 
@@ -166,6 +169,35 @@ describe('AuthService', () => {
         BadGatewayException,
       );
       expect(userRepository.insert).not.toHaveBeenCalled();
+    });
+
+    it('should prefer a configured auth success redirect url', async () => {
+      process.env.AUTH_SUCCESS_REDIRECT_URL = 'https://example.com/after-auth';
+
+      const mockOauthResponse: AxiosResponse = {
+        data: {
+          ok: true,
+          authed_user: {
+            id: 'U123456',
+            scope: 'commands',
+            access_token: 'xoxp-user-token',
+            token_type: 'Bearer',
+          },
+        } as OauthAccessDto,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} } as any,
+      };
+
+      jest.spyOn(httpService, 'post').mockReturnValue(of(mockOauthResponse));
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(userRepository, 'insert').mockResolvedValue(undefined);
+
+      await expect(authService.exchangeTempAuthToken({ code: 'test-code' })).resolves.toEqual({
+        success: true,
+        redirectUrl: 'https://example.com/after-auth',
+      });
     });
   });
 

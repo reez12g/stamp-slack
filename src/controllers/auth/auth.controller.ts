@@ -1,6 +1,15 @@
-import { Controller, Query, Get, Logger, HttpException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Controller,
+  Query,
+  Get,
+  Logger,
+  HttpException,
+  InternalServerErrorException,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from '../../providers/auth/auth.service';
 import { TempAuthTokenDTO } from '../../dto/auth/auth.token.dto';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -9,10 +18,19 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get()
-  async exchangeTempAuthToken(@Query() query: TempAuthTokenDTO) {
+  async exchangeTempAuthToken(
+    @Query() query: TempAuthTokenDTO & { format?: string },
+    @Res({ passthrough: true }) response: Response,
+  ) {
     try {
       this.logger.log(`Exchanging temporary auth token for code: ${query.code}`);
-      return await this.authService.exchangeTempAuthToken(query);
+      const result = await this.authService.exchangeTempAuthToken(query);
+
+      if (query.format === 'json') {
+        return result;
+      }
+
+      response.redirect(result.redirectUrl);
     } catch (error: any) {
       this.logger.error(`Failed to exchange temp auth token: ${error.message}`, error.stack);
       if (error instanceof HttpException) {
