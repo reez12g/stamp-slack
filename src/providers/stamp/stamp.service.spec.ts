@@ -3,6 +3,11 @@ import { StampService } from './stamp.service';
 import { AuthService } from '../auth/auth.service';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
 import { WebClient } from '@slack/web-api';
+import {
+  BadGatewayException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 
 // Mock @slack/web-api
 jest.mock('@slack/web-api');
@@ -102,7 +107,60 @@ describe('StampService', () => {
       });
     });
 
-    it('should handle emoji not found', async () => {
+    it('should resolve aliased emoji', async () => {
+      // Arrange
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: ':party:',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      const userToken = 'xoxp-user-token';
+      const emojiUrl = 'https://emoji.slack-edge.com/T123456/smile/abcdef123456.png';
+
+      // Mock auth service to return a token
+      jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
+
+      mockWebClient.emoji.list.mockResolvedValue({
+        ok: true,
+        emoji: {
+          party: 'alias:smile',
+          smile: emojiUrl,
+        },
+      } as any);
+
+      // Act
+      await stampService.makeEmojiBigger(payload);
+
+      // Assert
+      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
+      expect(WebClient).toHaveBeenCalledWith(userToken);
+      expect(mockWebClient.emoji.list).toHaveBeenCalled();
+      expect(mockWebClient.chat.postMessage).toHaveBeenCalledWith({
+        channel: 'C123456',
+        as_user: true,
+        text: '',
+        attachments: [
+          {
+            color: '#FFF',
+            text: '',
+            image_url: emojiUrl,
+          },
+        ],
+      });
+    });
+
+    it('should throw when emoji is not found', async () => {
       // Arrange
       const payload: StampDTO = {
         token: 'test-token',
@@ -119,13 +177,10 @@ describe('StampService', () => {
         response_url: 'https://hooks.slack.com/commands/123456',
         trigger_id: 'test-trigger',
       };
-      
+
       const userToken = 'xoxp-user-token';
-      
-      // Mock auth service to return a token
+
       jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
-      
-      // Mock WebClient emoji.list to return emoji data without the requested emoji
       mockWebClient.emoji.list.mockResolvedValue({
         ok: true,
         emoji: {
@@ -133,13 +188,7 @@ describe('StampService', () => {
         },
       } as any);
 
-      // Act
-      await stampService.makeEmojiBigger(payload);
-
-      // Assert
-      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
-      expect(WebClient).toHaveBeenCalledWith(userToken);
-      expect(mockWebClient.emoji.list).toHaveBeenCalled();
+      await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(NotFoundException);
       expect(mockWebClient.chat.postMessage).not.toHaveBeenCalled();
     });
 
@@ -211,6 +260,52 @@ describe('StampService', () => {
       expect(WebClient).toHaveBeenCalledWith(userToken);
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalled();
+    });
+
+    it('should throw when payload text is not a single emoji name', async () => {
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: 'smile extra',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(BadRequestException);
+      expect(authService.getUserToken).not.toHaveBeenCalled();
+      expect(WebClient).not.toHaveBeenCalled();
+    });
+
+    it('should throw when fetching the emoji list fails', async () => {
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: ':smile:',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      jest.spyOn(authService, 'getUserToken').mockResolvedValue('xoxp-user-token');
+      mockWebClient.emoji.list.mockRejectedValue(new Error('emoji.list failed'));
+
+      await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(BadGatewayException);
+      expect(mockWebClient.chat.postMessage).not.toHaveBeenCalled();
     });
   });
 });

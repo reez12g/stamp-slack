@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StampController } from './stamp.controller';
 import { StampService } from '../../providers/stamp/stamp.service';
-import { HttpException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
 
 describe('StampController', () => {
@@ -76,6 +76,30 @@ describe('StampController', () => {
 
       // Act & Assert
       await expect(stampController.stampSlack(payload)).rejects.toThrow(HttpException);
+      expect(stampService.makeEmojiBigger).toHaveBeenCalledWith(payload);
+    });
+
+    it('should preserve HttpException from stamp service', async () => {
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: ':smile:',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      const exception = new HttpException('Emoji not found', HttpStatus.NOT_FOUND);
+      jest.spyOn(stampService, 'makeEmojiBigger').mockRejectedValue(exception);
+
+      await expect(stampController.stampSlack(payload)).rejects.toBe(exception);
       expect(stampService.makeEmojiBigger).toHaveBeenCalledWith(payload);
     });
   });

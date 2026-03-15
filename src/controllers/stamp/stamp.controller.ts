@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Logger,
+  HttpException,
+  HttpStatus,
+  HttpCode,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { StampService } from '../../providers/stamp/stamp.service';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
 
@@ -9,6 +18,7 @@ export class StampController {
   constructor(private readonly stampService: StampService) {}
 
   @Post()
+  @HttpCode(HttpStatus.OK)
   async stampSlack(@Body() payload: StampDTO) {
     try {
       this.logger.log(`Received stamp request for emoji: ${payload.text}`);
@@ -16,10 +26,11 @@ export class StampController {
       return { success: true, message: 'Emoji posted successfully' };
     } catch (error: any) {
       this.logger.error(`Failed to stamp slack: ${error.message}`, error.stack);
-      throw new HttpException(
-        'Failed to post emoji to Slack',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to post emoji to Slack');
     }
   }
 }

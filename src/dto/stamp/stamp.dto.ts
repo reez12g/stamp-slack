@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/class-name-casing
 export class StampDTO {
   token: string;
   team_id: string;

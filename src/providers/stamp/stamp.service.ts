@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { WebClient } from '@slack/web-api';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
@@ -13,20 +19,23 @@ export class StampService {
     try {
       const channelId = payload.channel_id;
       const userId = payload.user_id;
-      const text = payload.text.replace(/:([^:]+):/, '$1');
+      const emojiName = this.normalizeEmojiName(payload.text);
 
-      this.logger.debug(`Making emoji bigger: ${text} for user: ${userId} in channel: ${channelId}`);
-      
+      this.logger.debug(
+        `Making emoji bigger: ${emojiName} for user: ${userId} in channel: ${channelId}`,
+      );
+
       const token = await this.authService.getUserToken(userId);
       const webClient = new WebClient(token);
-      
-      const emoji = await this.getEmojiURL(webClient, text);
-      if (emoji) {
-        await this.createAttachment(webClient, channelId, emoji);
-        this.logger.debug(`Successfully posted emoji: ${text}`);
-      } else {
-        this.logger.warn(`Emoji not found: ${text}`);
+
+      const emoji = await this.getEmojiURL(webClient, emojiName);
+      if (!emoji) {
+        this.logger.warn(`Emoji not found: ${emojiName}`);
+        throw new NotFoundException(`Emoji "${emojiName}" was not found`);
       }
+
+      await this.createAttachment(webClient, channelId, emoji);
+      this.logger.debug(`Successfully posted emoji: ${emojiName}`);
     } catch (error: any) {
       this.logger.error(`Error making emoji bigger: ${error.message}`, error.stack);
       throw error;
@@ -37,10 +46,10 @@ export class StampService {
     try {
       const emojiAPIResponse = await webclient.emoji.list();
       const emojiList = emojiAPIResponse.emoji as Record<string, string>;
-      return emojiList[text] || null;
+      return this.resolveEmojiUrl(emojiList, text);
     } catch (error: any) {
       this.logger.error(`Error getting emoji URL: ${error.message}`, error.stack);
-      return null;
+      throw new BadGatewayException('Failed to fetch emoji list from Slack');
     }
   }
 
@@ -62,5 +71,39 @@ export class StampService {
       this.logger.error(`Error creating attachment: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  private normalizeEmojiName(text: string): string {
+    const match = text.trim().match(/^:?(?<emoji>[a-z0-9_+-]+):?$/i);
+    const emojiName = match?.groups?.emoji;
+
+    if (!emojiName) {
+      throw new BadRequestException('A single emoji name is required');
+    }
+
+    return emojiName;
+  }
+
+  private resolveEmojiUrl(
+    emojiList: Record<string, string>,
+    emojiName: string,
+    visited = new Set<string>(),
+  ): string | null {
+    if (visited.has(emojiName)) {
+      return null;
+    }
+
+    visited.add(emojiName);
+
+    const emojiValue = emojiList[emojiName];
+    if (!emojiValue) {
+      return null;
+    }
+
+    if (!emojiValue.startsWith('alias:')) {
+      return emojiValue;
+    }
+
+    return this.resolveEmojiUrl(emojiList, emojiValue.replace('alias:', ''), visited);
   }
 }

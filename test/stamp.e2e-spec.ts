@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import { INestApplication, HttpException, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { StampController } from '../src/controllers/stamp/stamp.controller';
 import { StampService } from '../src/providers/stamp/stamp.service';
@@ -51,7 +51,7 @@ describe('StampController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/stamp')
       .send(payload)
-      .expect(HttpStatus.CREATED)
+      .expect(HttpStatus.OK)
       .expect({ success: true, message: 'Emoji posted successfully' });
   });
 
@@ -78,6 +78,33 @@ describe('StampController (e2e)', () => {
       .post('/stamp')
       .send(payload)
       .expect(HttpStatus.INTERNAL_SERVER_ERROR);
+  });
+
+  it('/stamp (POST) - preserves HttpException status', async () => {
+    const payload: StampDTO = {
+      token: 'test-token',
+      team_id: 'T123456',
+      team_domain: 'test-team',
+      enterprise_id: 'E123456',
+      enterprise_name: 'Test Enterprise',
+      channel_id: 'C123456',
+      channel_name: 'test-channel',
+      user_id: 'U123456',
+      user_name: 'test-user',
+      command: '/stamp',
+      text: ':smile:',
+      response_url: 'https://hooks.slack.com/commands/123456',
+      trigger_id: 'test-trigger',
+    };
+
+    jest
+      .spyOn(stampService, 'makeEmojiBigger')
+      .mockRejectedValue(new HttpException('Emoji not found', HttpStatus.NOT_FOUND));
+
+    return request(app.getHttpServer())
+      .post('/stamp')
+      .send(payload)
+      .expect(HttpStatus.NOT_FOUND);
   });
 
   afterEach(async () => {
