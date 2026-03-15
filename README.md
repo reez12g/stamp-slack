@@ -20,6 +20,8 @@ A NestJS application that integrates with Slack to make emojis bigger in Slack c
 2. Install dependencies:
 
 ```bash
+nvm install
+nvm use
 npm install
 ```
 
