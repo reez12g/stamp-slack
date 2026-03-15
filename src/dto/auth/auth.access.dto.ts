@@ -1,5 +1,6 @@
 export class OauthAccessDto {
-  ok: string;
+  ok: boolean;
+  error?: string;
   access_token: string;
   token_type: string;
   scope: string;

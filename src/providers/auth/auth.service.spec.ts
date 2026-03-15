@@ -7,6 +7,13 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
 import { OauthAccessDto } from '../../dto/auth/auth.access.dto';
 import { AxiosResponse } from 'axios';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -52,7 +59,7 @@ describe('AuthService', () => {
       const query = { code: 'test-code' };
       const mockOauthResponse: AxiosResponse = {
         data: {
-          ok: 'true',
+          ok: true,
           access_token: 'xoxp-test-token',
           token_type: 'Bearer',
           scope: 'commands',
@@ -99,6 +106,7 @@ describe('AuthService', () => {
       const query = { code: 'test-code' };
       const mockOauthResponse: AxiosResponse = {
         data: {
+          ok: true,
           authed_user: {
             id: 'U123456',
             scope: 'commands',
@@ -116,9 +124,47 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue({ id: 'U123456', scope: 'commands', access_token: 'xoxp-user-token' });
 
       // Act & Assert
-      await expect(authService.exchangeTempAuthToken(query)).rejects.toThrow('User is already registered.');
+      await expect(authService.exchangeTempAuthToken(query)).rejects.toThrow(ConflictException);
       expect(httpService.post).toHaveBeenCalled();
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: 'U123456' } });
+      expect(userRepository.insert).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error when code is missing', async () => {
+      await expect(authService.exchangeTempAuthToken({ code: '' })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error when Slack OAuth is not configured', async () => {
+      delete process.env.SLACK_CLIENT_ID;
+      delete process.env.SLACK_CLIENT_SECRET;
+
+      await expect(authService.exchangeTempAuthToken({ code: 'test-code' })).rejects.toThrow(
+        InternalServerErrorException,
+      );
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error when Slack rejects the OAuth request', async () => {
+      const query = { code: 'test-code' };
+      const mockOauthResponse: AxiosResponse = {
+        data: {
+          ok: false,
+          error: 'invalid_code',
+        } as OauthAccessDto,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} } as any,
+      };
+
+      jest.spyOn(httpService, 'post').mockReturnValue(of(mockOauthResponse));
+
+      await expect(authService.exchangeTempAuthToken(query)).rejects.toThrow(
+        BadGatewayException,
+      );
       expect(userRepository.insert).not.toHaveBeenCalled();
     });
   });
@@ -144,7 +190,7 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       // Act & Assert
-      await expect(authService.getUserToken(userId)).rejects.toThrow('User not found');
+      await expect(authService.getUserToken(userId)).rejects.toThrow(NotFoundException);
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
     });
   });
@@ -167,7 +213,7 @@ describe('AuthService', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
 
       // Act & Assert
-      await expect(authService.preventSameUser(userId)).rejects.toThrow('User is already registered.');
+      await expect(authService.preventSameUser(userId)).rejects.toThrow(ConflictException);
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
     });
   });

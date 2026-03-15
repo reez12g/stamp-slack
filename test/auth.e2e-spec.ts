@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import { INestApplication, HttpException, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from '../src/controllers/auth/auth.controller';
 import { AuthService } from '../src/providers/auth/auth.service';
@@ -46,6 +46,17 @@ describe('AuthController (e2e)', () => {
       .get('/auth')
       .query({ code: 'test-code', state: 'test-state' })
       .expect(HttpStatus.INTERNAL_SERVER_ERROR);
+  });
+
+  it('/auth (GET) - preserves HttpException status', async () => {
+    jest
+      .spyOn(authService, 'exchangeTempAuthToken')
+      .mockRejectedValue(new HttpException('Already registered', HttpStatus.CONFLICT));
+
+    return request(app.getHttpServer())
+      .get('/auth')
+      .query({ code: 'test-code', state: 'test-state' })
+      .expect(HttpStatus.CONFLICT);
   });
 
   afterEach(async () => {

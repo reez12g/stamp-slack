@@ -36,6 +36,7 @@ cp .env.example .env
      - `emoji:read`
    - Set the redirect URL to `http://your-domain/auth`
    - Copy your Client ID and Client Secret to the `.env` file
+   - Optionally set `AUTH_SUCCESS_REDIRECT_URL` if you want to redirect users after OAuth completes
 
 ## Running the Application
 

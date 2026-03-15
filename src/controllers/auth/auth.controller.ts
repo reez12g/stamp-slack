@@ -1,4 +1,4 @@
-import { Controller, Query, Get, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Query, Get, Logger, HttpException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from '../../providers/auth/auth.service';
 import { TempAuthTokenDTO } from '../../dto/auth/auth.token.dto';
 
@@ -15,10 +15,11 @@ export class AuthController {
       return await this.authService.exchangeTempAuthToken(query);
     } catch (error: any) {
       this.logger.error(`Failed to exchange temp auth token: ${error.message}`, error.stack);
-      throw new HttpException(
-        'Failed to authenticate with Slack',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to authenticate with Slack');
     }
   }
 }
