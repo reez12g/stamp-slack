@@ -24,7 +24,7 @@ describe('StampService', () => {
         {
           provide: AuthService,
           useValue: {
-            getUserToken: jest.fn(),
+            getBotToken: jest.fn(),
           },
         },
       ],
@@ -67,11 +67,11 @@ describe('StampService', () => {
         trigger_id: 'test-trigger',
       };
       
-      const userToken = 'xoxp-user-token';
+      const botToken = 'xoxb-bot-token';
       const emojiUrl = 'https://emoji.slack-edge.com/T123456/smile/abcdef123456.png';
       
       // Mock auth service to return a token
-      jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue(botToken);
       
       // Mock WebClient emoji.list to return emoji data
       mockWebClient.emoji.list.mockResolvedValue({
@@ -90,12 +90,11 @@ describe('StampService', () => {
       await stampService.makeEmojiBigger(payload);
 
       // Assert
-      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
-      expect(WebClient).toHaveBeenCalledWith(userToken);
+      expect(authService.getBotToken).toHaveBeenCalledWith('T123456');
+      expect(WebClient).toHaveBeenCalledWith(botToken);
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: 'C123456',
-        as_user: true,
         text: '',
         attachments: [
           {
@@ -125,11 +124,11 @@ describe('StampService', () => {
         trigger_id: 'test-trigger',
       };
 
-      const userToken = 'xoxp-user-token';
+      const botToken = 'xoxb-bot-token';
       const emojiUrl = 'https://emoji.slack-edge.com/T123456/smile/abcdef123456.png';
 
       // Mock auth service to return a token
-      jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue(botToken);
 
       mockWebClient.emoji.list.mockResolvedValue({
         ok: true,
@@ -143,12 +142,11 @@ describe('StampService', () => {
       await stampService.makeEmojiBigger(payload);
 
       // Assert
-      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
-      expect(WebClient).toHaveBeenCalledWith(userToken);
+      expect(authService.getBotToken).toHaveBeenCalledWith('T123456');
+      expect(WebClient).toHaveBeenCalledWith(botToken);
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: 'C123456',
-        as_user: true,
         text: '',
         attachments: [
           {
@@ -178,9 +176,9 @@ describe('StampService', () => {
         trigger_id: 'test-trigger',
       };
 
-      const userToken = 'xoxp-user-token';
+      const botToken = 'xoxb-bot-token';
 
-      jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue(botToken);
       mockWebClient.emoji.list.mockResolvedValue({
         ok: true,
         emoji: {
@@ -211,11 +209,15 @@ describe('StampService', () => {
       };
       
       // Mock auth service to throw an error
-      jest.spyOn(authService, 'getUserToken').mockRejectedValue(new Error('User not found'));
+      jest.spyOn(authService, 'getBotToken').mockRejectedValue(
+        new Error('Workspace not installed'),
+      );
 
       // Act & Assert
-      await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow('User not found');
-      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
+      await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(
+        'Workspace not installed',
+      );
+      expect(authService.getBotToken).toHaveBeenCalledWith('T123456');
       expect(WebClient).not.toHaveBeenCalled();
     });
 
@@ -237,11 +239,11 @@ describe('StampService', () => {
         trigger_id: 'test-trigger',
       };
       
-      const userToken = 'xoxp-user-token';
+      const botToken = 'xoxb-bot-token';
       const emojiUrl = 'https://emoji.slack-edge.com/T123456/smile/abcdef123456.png';
       
       // Mock auth service to return a token
-      jest.spyOn(authService, 'getUserToken').mockResolvedValue(userToken);
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue(botToken);
       
       // Mock WebClient emoji.list to return emoji data
       mockWebClient.emoji.list.mockResolvedValue({
@@ -256,8 +258,8 @@ describe('StampService', () => {
 
       // Act & Assert
       await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow('Slack API error');
-      expect(authService.getUserToken).toHaveBeenCalledWith('U123456');
-      expect(WebClient).toHaveBeenCalledWith(userToken);
+      expect(authService.getBotToken).toHaveBeenCalledWith('T123456');
+      expect(WebClient).toHaveBeenCalledWith(botToken);
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalled();
     });
@@ -280,7 +282,7 @@ describe('StampService', () => {
       };
 
       await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(BadRequestException);
-      expect(authService.getUserToken).not.toHaveBeenCalled();
+      expect(authService.getBotToken).not.toHaveBeenCalled();
       expect(WebClient).not.toHaveBeenCalled();
     });
 
@@ -301,7 +303,7 @@ describe('StampService', () => {
         trigger_id: 'test-trigger',
       };
 
-      jest.spyOn(authService, 'getUserToken').mockResolvedValue('xoxp-user-token');
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue('xoxb-bot-token');
       mockWebClient.emoji.list.mockRejectedValue(new Error('emoji.list failed'));
 
       await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(BadGatewayException);

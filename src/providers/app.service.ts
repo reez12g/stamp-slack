@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import {
-  buildSlackInstallUrl,
   getAppBaseUrl,
   getAuthSuccessRedirectUrl,
   getSlackBotScopes,
   getSlackCommandUrl,
+  getSlackInstallStartUrl,
   getSlackOAuthRedirectUrl,
   getSlackUserScopes,
 } from '../config/slack-app.config';
@@ -24,7 +24,7 @@ export class AppService {
     const authSuccessRedirectUrl = getAuthSuccessRedirectUrl();
     const botScopes = getSlackBotScopes();
     const userScopes = getSlackUserScopes();
-    const addToSlackUrl = buildSlackInstallUrl();
+    const addToSlackUrl = process.env.SLACK_CLIENT_ID ? getSlackInstallStartUrl() : null;
 
     const setupChecklist: SetupItem[] = [
       {
@@ -36,6 +36,11 @@ export class AppService {
         label: 'Slack client secret',
         value: process.env.SLACK_CLIENT_SECRET ? 'Configured' : 'Missing',
         ready: Boolean(process.env.SLACK_CLIENT_SECRET),
+      },
+      {
+        label: 'Slack signing secret',
+        value: process.env.SLACK_SIGNING_SECRET ? 'Configured' : 'Missing',
+        ready: Boolean(process.env.SLACK_SIGNING_SECRET),
       },
       {
         label: 'App base URL',
@@ -69,6 +74,7 @@ export class AppService {
       authSuccessRedirectUrl,
       botScopes,
       userScopes,
+      hasUserScopes: userScopes.length > 0,
       botScopesText: botScopes.join(', '),
       userScopesText: userScopes.join(', '),
       setupChecklist,

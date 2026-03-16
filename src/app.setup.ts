@@ -12,8 +12,9 @@ function captureRawBody(
   request: RawBodyRequest,
   _response: ServerResponse,
   buffer: Buffer,
-  _encoding: string,
+  encoding: string,
 ): void {
+  void encoding;
   request.rawBody = Buffer.from(buffer);
 }
 

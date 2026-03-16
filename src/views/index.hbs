@@ -249,13 +249,14 @@
         <p class="eyebrow">Slack Slash Command Setup</p>
         <h1>{{ title }}</h1>
         <p class="lede">
-            Authenticate one Slack user, then use <code>/stamp :emoji:</code> to post a larger version
-            of that emoji into the current channel.
+            Install the app into your Slack workspace, then use <code>/stamp :emoji:</code> to post
+            a larger version of that emoji into the current channel.
         </p>
 
         {{#if connected}}
             <div class="banner success">
-                Slack OAuth completed successfully. Return to Slack and try <code>/stamp :thumbsup:</code>.
+                Slack workspace installation completed successfully. Return to Slack and try
+                <code>/stamp :thumbsup:</code>.
             </div>
         {{/if}}
 
@@ -306,11 +307,15 @@
 
                 <div>
                     <strong class="status-label">User scopes</strong>
-                    <ul class="scope-list">
-                        {{#each userScopes}}
-                            <li>{{ this }}</li>
-                        {{/each}}
-                    </ul>
+                    {{#if hasUserScopes}}
+                        <ul class="scope-list">
+                            {{#each userScopes}}
+                                <li>{{ this }}</li>
+                            {{/each}}
+                        </ul>
+                    {{else}}
+                        <p>No user scopes required.</p>
+                    {{/if}}
                 </div>
             </div>
         </article>
@@ -333,8 +338,9 @@
                 <li>Run <code>cp .env.example .env</code> and fill in your Slack credentials.</li>
                 <li>Start PostgreSQL with <code>docker compose up -d postgres</code> or point the app at an existing database.</li>
                 <li>Set <code>APP_BASE_URL</code> to your public HTTPS URL if you are testing from localhost.</li>
+                <li>Copy the Slack app's signing secret into <code>SLACK_SIGNING_SECRET</code>.</li>
                 <li>Create a Slash Command in Slack and set its request URL to <code>{{ slashCommandUrl }}</code>.</li>
-                <li>Install the app, complete OAuth, then run <code>/stamp :emoji:</code> inside Slack.</li>
+                <li>Install the app once for the workspace, then run <code>/stamp :emoji:</code> inside Slack.</li>
             </ol>
         </article>
     </section>

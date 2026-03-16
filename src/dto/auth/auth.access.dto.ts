@@ -1,14 +1,14 @@
 export class OauthAccessDto {
   ok: boolean;
   error?: string;
-  access_token: string;
-  token_type: string;
-  scope: string;
-  bot_user_id: string;
-  app_id: string;
-  team: Team;
-  enterprise: Enterprise;
-  authed_user: AuthedUser;
+  access_token?: string;
+  token_type?: string;
+  scope?: string;
+  bot_user_id?: string;
+  app_id?: string;
+  team?: Team;
+  enterprise?: Enterprise;
+  authed_user?: AuthedUser;
 }
 
 export class Team {
@@ -21,7 +21,7 @@ export class Enterprise {
 }
 export class AuthedUser {
   id: string;
-  scope: string;
-  access_token: string;
-  token_type: string;
+  scope?: string;
+  access_token?: string;
+  token_type?: string;
 }

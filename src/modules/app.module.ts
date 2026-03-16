@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from '../controllers/app.controller';
 import { AppService } from '../providers/app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../entities/auth/user.entity';
+import { SlackInstallation } from '../entities/auth/slack-installation.entity';
 import { AuthModule } from './auth/auth.module';
 import { StampModule } from './stamp/stamp.module';
 import { ConfigModule } from '@nestjs/config';
@@ -21,7 +21,7 @@ import { ConfigModule } from '@nestjs/config';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: false,
-      entities: [User],
+      entities: [SlackInstallation],
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     }),
     AuthModule,

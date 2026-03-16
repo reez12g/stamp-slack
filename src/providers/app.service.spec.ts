@@ -28,16 +28,16 @@ describe('AppService', () => {
     expect(page.oauthRedirectUrl).toBe('http://localhost:3000/auth');
     expect(page.slashCommandUrl).toBe('http://localhost:3000/stamp');
     expect(page.needsPublicBaseUrl).toBe(true);
-    expect(page.botScopes).toEqual(['commands']);
-    expect(page.userScopes).toEqual(['chat:write', 'emoji:read']);
+    expect(page.botScopes).toEqual(['commands', 'chat:write', 'emoji:read']);
+    expect(page.userScopes).toEqual([]);
   });
 
   it('should build install urls and scopes from environment variables', () => {
     process.env.APP_BASE_URL = 'https://stamp.example.com/';
     process.env.SLACK_CLIENT_ID = '123456';
     process.env.SLACK_CLIENT_SECRET = 'secret';
-    process.env.SLACK_BOT_SCOPES = 'commands,app_mentions:read';
-    process.env.SLACK_USER_SCOPES = 'chat:write,emoji:read';
+    process.env.SLACK_BOT_SCOPES = 'commands,chat:write,emoji:read';
+    process.env.SLACK_SIGNING_SECRET = 'signing-secret';
     process.env.AUTH_SUCCESS_REDIRECT_URL = 'https://stamp.example.com/ready';
 
     const appService = new AppService();
@@ -46,8 +46,7 @@ describe('AppService', () => {
     expect(page.connected).toBe(true);
     expect(page.needsPublicBaseUrl).toBe(false);
     expect(page.authSuccessRedirectUrl).toBe('https://stamp.example.com/ready');
-    expect(page.addToSlackUrl).toContain('client_id=123456');
-    expect(page.addToSlackUrl).toContain('redirect_uri=https%3A%2F%2Fstamp.example.com%2Fauth');
-    expect(page.botScopes).toEqual(['commands', 'app_mentions:read']);
+    expect(page.addToSlackUrl).toBe('https://stamp.example.com/auth/start');
+    expect(page.botScopes).toEqual(['commands', 'chat:write', 'emoji:read']);
   });
 });

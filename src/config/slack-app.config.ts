@@ -1,6 +1,6 @@
 const DEFAULT_PORT = '3000';
-const DEFAULT_SLACK_BOT_SCOPES = ['commands'];
-const DEFAULT_SLACK_USER_SCOPES = ['chat:write', 'emoji:read'];
+const DEFAULT_SLACK_BOT_SCOPES = ['commands', 'chat:write', 'emoji:read'];
+const DEFAULT_SLACK_USER_SCOPES: string[] = [];
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
@@ -40,6 +40,10 @@ export function getSlackOAuthRedirectUrl(env: NodeJS.ProcessEnv = process.env): 
   return `${getAppBaseUrl(env)}/auth`;
 }
 
+export function getSlackInstallStartUrl(env: NodeJS.ProcessEnv = process.env): string {
+  return `${getAppBaseUrl(env)}/auth/start`;
+}
+
 export function getSlackCommandUrl(env: NodeJS.ProcessEnv = process.env): string {
   return `${getAppBaseUrl(env)}/stamp`;
 }
@@ -53,7 +57,10 @@ export function getAuthSuccessRedirectUrl(env: NodeJS.ProcessEnv = process.env):
   return `${getAppBaseUrl(env)}/?connected=1`;
 }
 
-export function buildSlackInstallUrl(env: NodeJS.ProcessEnv = process.env): string | null {
+export function buildSlackInstallUrl(
+  env: NodeJS.ProcessEnv = process.env,
+  state?: string,
+): string | null {
   const clientId = env.SLACK_CLIENT_ID?.trim();
   if (!clientId) {
     return null;
@@ -71,6 +78,10 @@ export function buildSlackInstallUrl(env: NodeJS.ProcessEnv = process.env): stri
   const userScopes = getSlackUserScopes(env);
   if (userScopes.length > 0) {
     url.searchParams.set('user_scope', userScopes.join(','));
+  }
+
+  if (state) {
+    url.searchParams.set('state', state);
   }
 
   return url.toString();

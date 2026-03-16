@@ -12,6 +12,7 @@ describe('AuthController (e2e)', () => {
 
   beforeEach(async () => {
     const mockAuthService = {
+      beginInstallation: jest.fn(),
       exchangeTempAuthToken: jest.fn(),
     };
 
@@ -39,6 +40,7 @@ describe('AuthController (e2e)', () => {
 
     return request(app.getHttpServer())
       .get('/auth')
+      .set('Cookie', 'slack_oauth_state=test-state-cookie')
       .query({ code: 'test-code', state: 'test-state' })
       .expect(HttpStatus.FOUND)
       .expect('Location', 'https://example.com');
@@ -50,6 +52,7 @@ describe('AuthController (e2e)', () => {
 
     return request(app.getHttpServer())
       .get('/auth')
+      .set('Cookie', 'slack_oauth_state=test-state-cookie')
       .query({ code: 'test-code', state: 'test-state', format: 'json' })
       .expect(HttpStatus.OK)
       .expect(mockResponse);
@@ -60,6 +63,7 @@ describe('AuthController (e2e)', () => {
 
     return request(app.getHttpServer())
       .get('/auth')
+      .set('Cookie', 'slack_oauth_state=test-state-cookie')
       .query({ code: 'test-code', state: 'test-state' })
       .expect(HttpStatus.INTERNAL_SERVER_ERROR);
   });
@@ -71,8 +75,24 @@ describe('AuthController (e2e)', () => {
 
     return request(app.getHttpServer())
       .get('/auth')
+      .set('Cookie', 'slack_oauth_state=test-state-cookie')
       .query({ code: 'test-code', state: 'test-state' })
       .expect(HttpStatus.CONFLICT);
+  });
+
+  it('/auth/start (GET) - redirects to Slack', async () => {
+    jest.spyOn(authService, 'beginInstallation').mockReturnValue({
+      redirectUrl: 'https://slack.com/oauth/v2/authorize?client_id=123',
+      stateCookieValue: 'state-cookie',
+      stateCookieMaxAgeMs: 600000,
+      secureCookie: false,
+    });
+
+    return request(app.getHttpServer())
+      .get('/auth/start')
+      .expect(HttpStatus.FOUND)
+      .expect('Location', 'https://slack.com/oauth/v2/authorize?client_id=123')
+      .expect('Set-Cookie', /slack_oauth_state=state-cookie/);
   });
 
   it('/auth (GET) - rejects an invalid callback query', async () => {

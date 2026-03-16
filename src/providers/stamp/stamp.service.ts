@@ -18,14 +18,14 @@ export class StampService {
   async makeEmojiBigger(payload: StampDTO): Promise<void> {
     try {
       const channelId = payload.channel_id;
-      const userId = payload.user_id;
+      const teamId = payload.team_id;
       const emojiName = this.normalizeEmojiName(payload.text);
 
       this.logger.debug(
-        `Making emoji bigger: ${emojiName} for user: ${userId} in channel: ${channelId}`,
+        `Making emoji bigger: ${emojiName} for team: ${teamId} in channel: ${channelId}`,
       );
 
-      const token = await this.authService.getUserToken(userId);
+      const token = await this.authService.getBotToken(teamId);
       const webClient = new WebClient(token);
 
       const emoji = await this.getEmojiURL(webClient, emojiName);
@@ -57,7 +57,6 @@ export class StampService {
     try {
       await webclient.chat.postMessage({
         channel: channelId,
-        as_user: true,
         text: '',
         attachments: [
           {
