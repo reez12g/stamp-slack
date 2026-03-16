@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { AuthController } from '../src/controllers/auth/auth.controller';
 import { AuthService } from '../src/providers/auth/auth.service';
+import { applyAppConfiguration } from '../src/app.setup';
 
 describe('AuthController (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   let authService: AuthService;
 
   beforeEach(async () => {
@@ -23,7 +25,10 @@ describe('AuthController (e2e)', () => {
       ],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestExpressApplication>(undefined, {
+      bodyParser: false,
+    });
+    applyAppConfiguration(app);
     authService = moduleFixture.get<AuthService>(AuthService);
     await app.init();
   });
@@ -68,6 +73,13 @@ describe('AuthController (e2e)', () => {
       .get('/auth')
       .query({ code: 'test-code', state: 'test-state' })
       .expect(HttpStatus.CONFLICT);
+  });
+
+  it('/auth (GET) - rejects an invalid callback query', async () => {
+    return request(app.getHttpServer())
+      .get('/auth')
+      .query({ code: 'test-code', state: '' })
+      .expect(HttpStatus.BAD_REQUEST);
   });
 
   afterEach(async () => {

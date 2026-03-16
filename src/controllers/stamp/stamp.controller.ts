@@ -1,15 +1,17 @@
 import {
   Body,
   Controller,
-  Post,
-  Logger,
   HttpException,
-  HttpStatus,
   HttpCode,
+  HttpStatus,
   InternalServerErrorException,
+  Logger,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import { StampService } from '../../providers/stamp/stamp.service';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
+import { SlackRequestSignatureGuard } from '../../guards/slack-request-signature.guard';
 
 @Controller('stamp')
 export class StampController {
@@ -19,6 +21,7 @@ export class StampController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
+  @UseGuards(SlackRequestSignatureGuard)
   async stampSlack(@Body() payload: StampDTO) {
     try {
       this.logger.log(`Received stamp request for emoji: ${payload.text}`);

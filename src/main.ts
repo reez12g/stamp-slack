@@ -1,17 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import { AppModule } from './modules/app.module';
 import { Logger } from '@nestjs/common';
+import { applyAppConfiguration } from './app.setup';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule);
-    app.enableCors();
-    app.setBaseViewsDir(join(__dirname, '..', 'src/views'));
-    app.setViewEngine('hbs');
-    
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      bodyParser: false,
+    });
+    applyAppConfiguration(app);
+
     const port = process.env.PORT || 3000;
     await app.listen(port);
     logger.log(`Application started successfully on port ${port}`);

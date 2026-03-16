@@ -19,7 +19,7 @@ export class AuthController {
 
   @Get()
   async exchangeTempAuthToken(
-    @Query() query: TempAuthTokenDTO & { format?: string },
+    @Query() query: TempAuthTokenDTO,
     @Res({ passthrough: true }) response: Response,
   ) {
     try {
