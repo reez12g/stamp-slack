@@ -1,10 +1,8 @@
 import {
   Body,
   Controller,
-  HttpException,
   HttpCode,
   HttpStatus,
-  InternalServerErrorException,
   Logger,
   Post,
   UseGuards,
@@ -22,18 +20,10 @@ export class StampController {
   @Post()
   @HttpCode(HttpStatus.OK)
   @UseGuards(SlackRequestSignatureGuard)
-  async stampSlack(@Body() payload: StampDTO) {
-    try {
-      this.logger.log(`Received stamp request for emoji: ${payload.text}`);
-      await this.stampService.makeEmojiBigger(payload);
-      return { success: true, message: 'Emoji posted successfully' };
-    } catch (error: any) {
-      this.logger.error(`Failed to stamp slack: ${error.message}`, error.stack);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException('Failed to post emoji to Slack');
-    }
+  stampSlack(@Body() payload: StampDTO) {
+    this.logger.log(`Received stamp request for emoji: ${payload.text}`);
+    void this.stampService.handleSlashCommand(payload).catch((error: any) => {
+      this.logger.error(`Unhandled stamp command error: ${error.message}`, error.stack);
+    });
   }
 }

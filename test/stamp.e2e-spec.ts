@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { StampController } from '../src/controllers/stamp/stamp.controller';
@@ -35,7 +35,7 @@ describe('StampController (e2e)', () => {
     process.env.SLACK_SIGNING_SECRET = 'test-signing-secret';
 
     const mockStampService = {
-      makeEmojiBigger: jest.fn(),
+      handleSlashCommand: jest.fn(),
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -73,14 +73,16 @@ describe('StampController (e2e)', () => {
       trigger_id: 'test-trigger',
     };
 
-    jest.spyOn(stampService, 'makeEmojiBigger').mockResolvedValue();
+    jest.spyOn(stampService, 'handleSlashCommand').mockResolvedValue();
 
     return buildSignedRequest(payload)
       .expect(HttpStatus.OK)
-      .expect({ success: true, message: 'Emoji posted successfully' });
+      .expect((response) => {
+        expect(response.text).toBe('');
+      });
   });
 
-  it('/stamp (POST) - failure', async () => {
+  it('/stamp (POST) - returns immediately even if the background task rejects', async () => {
     const payload: StampDTO = {
       token: 'test-token',
       team_id: 'T123456',
@@ -97,35 +99,10 @@ describe('StampController (e2e)', () => {
       trigger_id: 'test-trigger',
     };
 
-    jest.spyOn(stampService, 'makeEmojiBigger').mockRejectedValue(new Error('Service error'));
+    jest.spyOn(stampService, 'handleSlashCommand').mockRejectedValue(new Error('Service error'));
 
     return buildSignedRequest(payload)
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR);
-  });
-
-  it('/stamp (POST) - preserves HttpException status', async () => {
-    const payload: StampDTO = {
-      token: 'test-token',
-      team_id: 'T123456',
-      team_domain: 'test-team',
-      enterprise_id: 'E123456',
-      enterprise_name: 'Test Enterprise',
-      channel_id: 'C123456',
-      channel_name: 'test-channel',
-      user_id: 'U123456',
-      user_name: 'test-user',
-      command: '/stamp',
-      text: ':smile:',
-      response_url: 'https://hooks.slack.com/commands/123456',
-      trigger_id: 'test-trigger',
-    };
-
-    jest
-      .spyOn(stampService, 'makeEmojiBigger')
-      .mockRejectedValue(new HttpException('Emoji not found', HttpStatus.NOT_FOUND));
-
-    return buildSignedRequest(payload)
-      .expect(HttpStatus.NOT_FOUND);
+      .expect(HttpStatus.OK);
   });
 
   it('/stamp (POST) - rejects an invalid Slack signature', async () => {

@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StampController } from './stamp.controller';
 import { StampService } from '../../providers/stamp/stamp.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
 
 describe('StampController', () => {
@@ -15,7 +14,7 @@ describe('StampController', () => {
         {
           provide: StampService,
           useValue: {
-            makeEmojiBigger: jest.fn(),
+            handleSlashCommand: jest.fn(),
           },
         },
       ],
@@ -26,7 +25,7 @@ describe('StampController', () => {
   });
 
   describe('stampSlack', () => {
-    it('should make emoji bigger successfully', async () => {
+    it('should hand off slash commands without waiting for Slack work', async () => {
       // Arrange
       const payload: StampDTO = {
         token: 'test-token',
@@ -43,43 +42,18 @@ describe('StampController', () => {
         response_url: 'https://hooks.slack.com/commands/123456',
         trigger_id: 'test-trigger',
       };
-      
-      jest.spyOn(stampService, 'makeEmojiBigger').mockResolvedValue();
+
+      jest.spyOn(stampService, 'handleSlashCommand').mockResolvedValue();
 
       // Act
       const result = await stampController.stampSlack(payload);
 
       // Assert
-      expect(result).toEqual({ success: true, message: 'Emoji posted successfully' });
-      expect(stampService.makeEmojiBigger).toHaveBeenCalledWith(payload);
+      expect(result).toBeUndefined();
+      expect(stampService.handleSlashCommand).toHaveBeenCalledWith(payload);
     });
 
-    it('should throw HttpException when stamp service throws an error', async () => {
-      // Arrange
-      const payload: StampDTO = {
-        token: 'test-token',
-        team_id: 'T123456',
-        team_domain: 'test-team',
-        enterprise_id: 'E123456',
-        enterprise_name: 'Test Enterprise',
-        channel_id: 'C123456',
-        channel_name: 'test-channel',
-        user_id: 'U123456',
-        user_name: 'test-user',
-        command: '/stamp',
-        text: ':smile:',
-        response_url: 'https://hooks.slack.com/commands/123456',
-        trigger_id: 'test-trigger',
-      };
-      
-      jest.spyOn(stampService, 'makeEmojiBigger').mockRejectedValue(new Error('Service error'));
-
-      // Act & Assert
-      await expect(stampController.stampSlack(payload)).rejects.toThrow(HttpException);
-      expect(stampService.makeEmojiBigger).toHaveBeenCalledWith(payload);
-    });
-
-    it('should preserve HttpException from stamp service', async () => {
+    it('should still return immediately when the background task rejects', async () => {
       const payload: StampDTO = {
         token: 'test-token',
         team_id: 'T123456',
@@ -96,11 +70,11 @@ describe('StampController', () => {
         trigger_id: 'test-trigger',
       };
 
-      const exception = new HttpException('Emoji not found', HttpStatus.NOT_FOUND);
-      jest.spyOn(stampService, 'makeEmojiBigger').mockRejectedValue(exception);
+      jest.spyOn(stampService, 'handleSlashCommand').mockRejectedValue(new Error('Service error'));
 
-      await expect(stampController.stampSlack(payload)).rejects.toBe(exception);
-      expect(stampService.makeEmojiBigger).toHaveBeenCalledWith(payload);
+      expect(stampController.stampSlack(payload)).toBeUndefined();
+      await Promise.resolve();
+      expect(stampService.handleSlashCommand).toHaveBeenCalledWith(payload);
     });
   });
 });

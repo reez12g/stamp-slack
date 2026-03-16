@@ -3,6 +3,8 @@ import { StampService } from './stamp.service';
 import { AuthService } from '../auth/auth.service';
 import { StampDTO } from '../../dto/stamp/stamp.dto';
 import { WebClient } from '@slack/web-api';
+import { HttpService } from '@nestjs/axios';
+import { of } from 'rxjs';
 import {
   BadGatewayException,
   BadRequestException,
@@ -25,6 +27,12 @@ describe('StampService', () => {
           provide: AuthService,
           useValue: {
             getBotToken: jest.fn(),
+          },
+        },
+        {
+          provide: HttpService,
+          useValue: {
+            post: jest.fn(),
           },
         },
       ],
@@ -95,11 +103,11 @@ describe('StampService', () => {
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: 'C123456',
-        text: '',
+        text: ':smile:',
         attachments: [
           {
             color: '#FFF',
-            text: '',
+            text: ':smile:',
             image_url: emojiUrl,
           },
         ],
@@ -147,11 +155,11 @@ describe('StampService', () => {
       expect(mockWebClient.emoji.list).toHaveBeenCalled();
       expect(mockWebClient.chat.postMessage).toHaveBeenCalledWith({
         channel: 'C123456',
-        text: '',
+        text: ':party:',
         attachments: [
           {
             color: '#FFF',
-            text: '',
+            text: ':party:',
             image_url: emojiUrl,
           },
         ],
@@ -308,6 +316,72 @@ describe('StampService', () => {
 
       await expect(stampService.makeEmojiBigger(payload)).rejects.toThrow(BadGatewayException);
       expect(mockWebClient.chat.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should reuse cached emoji metadata for the same team', async () => {
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: ':smile:',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      jest.spyOn(authService, 'getBotToken').mockResolvedValue('xoxb-bot-token');
+      mockWebClient.emoji.list.mockResolvedValue({
+        ok: true,
+        emoji: {
+          smile: 'https://emoji.slack-edge.com/T123456/smile/abcdef123456.png',
+        },
+      } as any);
+      mockWebClient.chat.postMessage.mockResolvedValue({ ok: true } as any);
+
+      await stampService.makeEmojiBigger(payload);
+      await stampService.makeEmojiBigger(payload);
+
+      expect(WebClient).toHaveBeenCalledTimes(1);
+      expect(mockWebClient.emoji.list).toHaveBeenCalledTimes(1);
+      expect(mockWebClient.chat.postMessage).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('handleSlashCommand', () => {
+    it('should send an ephemeral failure response when posting fails', async () => {
+      const payload: StampDTO = {
+        token: 'test-token',
+        team_id: 'T123456',
+        team_domain: 'test-team',
+        enterprise_id: 'E123456',
+        enterprise_name: 'Test Enterprise',
+        channel_id: 'C123456',
+        channel_name: 'test-channel',
+        user_id: 'U123456',
+        user_name: 'test-user',
+        command: '/stamp',
+        text: ':smile:',
+        response_url: 'https://hooks.slack.com/commands/123456',
+        trigger_id: 'test-trigger',
+      };
+
+      const httpService = (stampService as any).httpService as HttpService;
+      jest
+        .spyOn(authService, 'getBotToken')
+        .mockRejectedValue(new NotFoundException('Slack workspace is not installed'));
+      jest.spyOn(httpService, 'post').mockReturnValue(of({ data: { ok: true } } as any));
+
+      await expect(stampService.handleSlashCommand(payload)).resolves.toBeUndefined();
+      expect(httpService.post).toHaveBeenCalledWith(payload.response_url, {
+        response_type: 'ephemeral',
+        text: 'This workspace has not installed Stamp Slack yet. Open the app and click Add to Slack first.',
+      });
     });
   });
 });
