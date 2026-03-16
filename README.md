@@ -5,10 +5,10 @@ and posts a larger version of that emoji back into the channel.
 
 ## Features
 
-- Slack OAuth install flow with user token storage
-- Slash command endpoint for posting large custom emoji
+- Slack OAuth install flow with workspace-scoped bot token storage
+- Signed slash command endpoint with immediate acknowledgement
 - Friendly onboarding page at `/` with the exact URLs Slack needs
-- PostgreSQL persistence via TypeORM
+- PostgreSQL persistence via TypeORM migrations
 
 ## Prerequisites
 
@@ -30,6 +30,7 @@ npm install
 
 ```bash
 npm run db:start
+npm run migration:run
 ```
 
 3. Copy the environment file:
@@ -64,12 +65,11 @@ Slack cannot call `localhost` directly. For local development:
 1. Create an app at `https://api.slack.com/apps`.
 2. In `OAuth & Permissions`:
    - set the redirect URL to `<APP_BASE_URL>/auth`
-   - add bot scope `commands`
-   - add user scopes `chat:write` and `emoji:read`
+   - add bot scopes `commands`, `chat:write`, and `emoji:read`
 3. In `Slash Commands`:
    - create `/stamp`
    - set the request URL to `<APP_BASE_URL>/stamp`
-4. Copy `Client ID` and `Client Secret` into `.env`.
+4. Copy `Client ID`, `Client Secret`, and `Signing Secret` into `.env`.
 5. Visit the app root page and click `Add to Slack`.
 
 ## Running the Application
@@ -98,18 +98,20 @@ The minimum required values are:
 - `DB_NAME`
 - `SLACK_CLIENT_ID`
 - `SLACK_CLIENT_SECRET`
+- `SLACK_SIGNING_SECRET`
 
 Optional values:
 
 - `SLACK_BOT_SCOPES`
-- `SLACK_USER_SCOPES`
+- `SLACK_STATE_SECRET`
+- `TOKEN_ENCRYPTION_SECRET`
+- `EMOJI_CACHE_TTL_MS`
 - `AUTH_SUCCESS_REDIRECT_URL`
 
 ## Usage
 
 1. Install the app into your Slack workspace.
-2. Complete OAuth once for the Slack user who will call `/stamp`.
-3. Use the slash command followed by a single emoji name.
+2. Use the slash command followed by a single emoji name.
 
 Example:
 
@@ -117,7 +119,24 @@ Example:
 /stamp :thumbsup:
 ```
 
-If the app says the user is not registered, that Slack user has not completed the OAuth flow yet.
+If the app says the workspace is not installed, open the app root page and click `Add to Slack`.
+
+If you are upgrading from an older per-user token version of this app, reinstall the app in Slack once.
+Workspace installations are now stored in a new `slack_installations` table.
+
+## Database Migrations
+
+Run migrations explicitly with:
+
+```bash
+npm run migration:run
+```
+
+Revert the most recent migration with:
+
+```bash
+npm run migration:revert
+```
 
 ## Verification
 

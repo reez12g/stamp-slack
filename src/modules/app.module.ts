@@ -2,27 +2,18 @@ import { Module } from '@nestjs/common';
 import { AppController } from '../controllers/app.controller';
 import { AppService } from '../providers/app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SlackInstallation } from '../entities/auth/slack-installation.entity';
 import { AuthModule } from './auth/auth.module';
 import { StampModule } from './stamp/stamp.module';
 import { ConfigModule } from '@nestjs/config';
+import { getTypeOrmModuleOptions } from '../database/typeorm.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT ?? 5432),
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      synchronize: true,
-      logging: false,
-      entities: [SlackInstallation],
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    TypeOrmModule.forRootAsync({
+      useFactory: () => getTypeOrmModuleOptions(),
     }),
     AuthModule,
     StampModule,
